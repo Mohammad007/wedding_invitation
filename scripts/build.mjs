@@ -7,7 +7,7 @@ export async function buildSite(production = true) {
   await writeFile('dist/index.html', html);
   const js = await readFile('dist/assets/main.js', 'utf8');
   const css = await readFile('dist/assets/main.css', 'utf8');
-  const standalone = (await readFile('index.html', 'utf8')).replace('<script type="module" src="/src/main.jsx"></script>', `<style>${css}</style><script>${js.replaceAll('</script', '<\\/script')}</script>`);
+  const standalone = (await readFile('index.html', 'utf8')).replace('<script type="module" src="/src/main.jsx"></script>', () => `<style>${css}</style><script>${js.replaceAll('</script', '<\\/script')}</script>`);
   await writeFile('dist/invitation.html', standalone);
 }
 if (process.argv[1]?.endsWith('build.mjs')) { await buildSite(); console.log('Production build complete: dist/'); }
