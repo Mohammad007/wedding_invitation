@@ -5,7 +5,7 @@ import { buildSite } from './build.mjs';
 const production = process.argv.includes('--production');
 await buildSite(production);
 const root = resolve('dist');
-const types = { '.html':'text/html; charset=utf-8', '.js':'application/javascript', '.css':'text/css', '.map':'application/json' };
+const types = { '.html':'text/html; charset=utf-8', '.js':'application/javascript', '.css':'text/css', '.map':'application/json', '.mp3':'audio/mpeg', '.m4a':'audio/mp4', '.ogg':'audio/ogg' };
 const server = createServer(async (req, res) => {
   try {
     const path = resolve(root, '.' + decodeURIComponent(new URL(req.url, 'http://localhost').pathname));

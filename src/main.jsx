@@ -1,145 +1,235 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BlessingCarousel } from './Blessings.jsx';
+import { QrCode, ScratchCard } from './Extras.jsx';
 import './style.css';
 
 const WEDDING = new Date('2026-12-15T00:00:00+05:30');
 const DIRECTIONS = 'https://www.google.com/maps/search/?api=1&query=Chand+Banquet+Hall+Near+Double+Fatak+Najibabad';
-const SECTIONS = [
-  { id: 'welcome', label: 'Welcome' },
-  { id: 'couples', label: 'The couples' },
-  { id: 'date', label: 'The date' },
-  { id: 'venue', label: 'The venue' },
-  { id: 'blessing', label: 'A blessing' },
-  { id: 'farewell', label: 'With love' },
+// Put your own MP3 at public/music.mp3; the music button appears only once the file loads.
+// Shorter link for the QR code, so its dots are larger and easier for phone cameras to read
+const QR_DIRECTIONS = 'https://maps.google.com/?q=Chand+Banquet+Hall+Near+Double+Fatak+Najibabad';
+const MUSIC_SRC = 'https://pub-717179bab2d447a1a4a8b832b13d0e04.r2.dev/template-assets/emerald-qasr/music.mp3';
+const GROOM_HOME = 'Moh. Sewaram Kuwa, Najibabad';
+const COUPLES = [
+  { groom: ['Mohd', 'Subhan'], bride: 'Iqra Kousar', brideHome: ['Moh. Muneer Ganj,', 'Near Besatiyaam Masjid'] },
+  { groom: ['Mohd', 'Sheeraz'], bride: 'Afreen', brideHome: ['Kaze Sarah,', 'Nagina'] },
 ];
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rnd = (i, s) => { const x = Math.sin(i * 12.9898 + s * 78.233) * 43758.5453; return x - Math.floor(x); };
 
-/* ---------- Kinetic text: every letter animates in ---------- */
-function Split({ text, className = '', delay = 0, step = 0.035, as: Tag = 'span' }) {
-  let n = 0;
-  return <Tag className={'split ' + className}>
-    <span className="sr-only">{text}</span>
-    <span aria-hidden="true">{text.split(' ').map((word, wi) => <React.Fragment key={wi}>
-      {wi > 0 && ' '}
-      <span className="word">{[...word].map((c, ci) => <span key={ci} className="char" style={{ '--d': (delay + n++ * step).toFixed(3) + 's' }}>{c}</span>)}</span>
-    </React.Fragment>)}</span>
-  </Tag>;
+/* =========================================================
+   Artwork (all drawn in SVG)
+   ========================================================= */
+function Magnolia({ x, y, r = 0, s = 1 }) {
+  const petals = [-58, -30, 0, 30, 58];
+  return <g transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+    {petals.map((a, i) => <path key={i} transform={`rotate(${a}) scale(${i % 2 ? .82 : 1})`} d="M0 0C15-8 17-33 0-46C-17-33-15-8 0 0Z" fill="url(#petalPink)" stroke="#c9a24a" strokeWidth=".9" />)}
+    <path d="M-7 2Q0 8 7 2" stroke="#7f9a5d" strokeWidth="2" />
+  </g>;
 }
-
-/* ---------- The palace doors (replaces the envelope) ---------- */
-function Leaf({ side }) {
-  return <span className={'leaf ' + side}>
-    <span className="leaf-panel arch" />
-    <span className="leaf-panel" />
-    <span className="leaf-panel" />
-    <span className="ring"><i /></span>
-  </span>;
+function Leaf({ x, y, r = 0, s = 1, fill = '#9dbd84', vein = '#c9a24a' }) {
+  return <g transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+    <path d="M0 0C11-12 12-40 0-58C-12-40-11-12 0 0Z" fill={fill} stroke={vein} strokeWidth=".9" />
+    <path d="M0-4V-52" stroke={vein} strokeWidth=".7" />
+  </g>;
 }
-function Lantern({ side }) {
-  return <span className={'lantern ' + side} aria-hidden="true">
-    <svg viewBox="0 0 40 110" fill="none">
-      <path d="M20 0V26" stroke="#c99a3f" strokeWidth="1.4" />
-      <path d="M12 30H28L31 38H9Z" fill="#c99a3f" />
-      <path className="lantern-glass" d="M10 38H30L33 70Q20 82 7 70Z" fill="#ffd77a" stroke="#c99a3f" strokeWidth="1.6" />
-      <path d="M14 40V72M20 38V78M26 40V72" stroke="#a5752a" strokeWidth=".8" />
-      <path d="M13 78H27L20 92Z" fill="#c99a3f" /><circle cx="20" cy="96" r="2.5" fill="#c99a3f" />
-    </svg>
-  </span>;
+function MagnoliaCorner({ className }) {
+  return <svg className={className} viewBox="0 0 160 160" fill="none" aria-hidden="true">
+    <path d="M0 18C40 30 70 62 92 110M30 0C46 40 82 60 140 70" stroke="#c9a24a" strokeWidth="1.6" />
+    <Leaf x={30} y={40} r={120} s={.8} /><Leaf x={70} y={30} r={60} s={.7} /><Leaf x={62} y={86} r={150} s={.75} /><Leaf x={110} y={66} r={40} s={.6} /><Leaf x={20} y={92} r={170} s={.6} />
+    <Magnolia x={44} y={60} r={150} s={.75} /><Magnolia x={100} y={44} r={110} s={.62} /><Magnolia x={74} y={112} r={170} s={.6} /><Magnolia x={18} y={20} r={135} s={.5} />
+  </svg>;
 }
-function Gate({ state, onOpen }) {
-  const stars = Array.from({ length: 46 }, (_, i) => ({ left: rnd(i, 1) * 100 + '%', top: rnd(i, 2) * 70 + '%', size: 1 + rnd(i, 3) * 2.2, delay: -rnd(i, 4) * 4 + 's' }));
-  const burst = Array.from({ length: 34 }, (_, i) => { const a = (i / 34) * Math.PI * 2 + rnd(i, 5); const r = 40 + rnd(i, 6) * 60; return { x: Math.cos(a) * r + 'vmax', y: Math.sin(a) * r + 'vmax', rot: rnd(i, 7) * 720 + 'deg', delay: 1 + rnd(i, 8) * .5 + 's', hue: i % 3 }; });
-  return <div className={'gate ' + state} role="dialog" aria-label="Invitation entrance">
-    <div className="gate-sky" aria-hidden="true">{stars.map((s, i) => <i key={i} style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: s.delay }} />)}</div>
-    <div className="gate-moon" aria-hidden="true" />
-    <div className="gate-stage">
-      <p className="gate-kicker"><Split text="AN INVITATION AWAITS" step={0.05} delay={0.2} /></p>
-      <div className="portal-wrap">
-        <div className="rays" aria-hidden="true" />
-        <Lantern side="left" /><Lantern side="right" />
-        <svg className="frame" viewBox="-14 -30 128 196" fill="none" aria-hidden="true">
-          <path className="frame-glow" d="M-7 166V50C-7 20 26 8 50 -12C74 8 107 20 107 50V166" />
-          <path d="M-7 166V50C-7 20 26 8 50 -12C74 8 107 20 107 50V166" stroke="#e3b958" strokeWidth="2.2" />
-          <path d="M-3 166V51C-3 24 28 13 50 -6C72 13 103 24 103 51V166" stroke="#e3b958" strokeWidth=".8" strokeDasharray="1.5 2.5" />
-          <path d="M50 -12V-22M46 -20Q50 -30 54 -20Z" stroke="#e3b958" strokeWidth="1.2" fill="#e3b958" />
-          <circle cx="50" cy="-26" r="1.6" fill="#ffe7a3" />
-          <path d="M-14 160H114V166H-14Z" fill="#c99a3f" />
-          <path d="M-10 160V60M110 160V60" stroke="#e3b958" strokeWidth="3" />
-          <circle cx="-10" cy="58" r="2.5" fill="#e3b958" /><circle cx="110" cy="58" r="2.5" fill="#e3b958" />
-        </svg>
-        <div className="portal">
-          <div className="portal-light" aria-hidden="true" />
-          <button className="doors" onClick={onOpen} disabled={state !== 'closed'} aria-label="Open the palace doors to enter the invitation">
-            <Leaf side="left" /><Leaf side="right" />
-            <span className="seal" aria-hidden="true"><b>S</b><em>&amp;</em><b>S</b></span>
-          </button>
-        </div>
-      </div>
-      <p className="gate-hint"><span className="tap-dot" aria-hidden="true" />TAP THE DOORS TO ENTER</p>
-    </div>
-    <div className="burst" aria-hidden="true">{burst.map((b, i) => <i key={i} className={'h' + b.hue} style={{ '--x': b.x, '--y': b.y, '--r': b.rot, animationDelay: b.delay }} />)}</div>
-    <div className="flash" aria-hidden="true" />
-  </div>;
+function Lily({ x, y, r = 0, s = 1 }) {
+  return <g transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+    {[0, 60, 120, 180, 240, 300].map((a, i) => <path key={a} transform={`rotate(${a}) scale(${i % 2 ? .85 : 1})`} d="M0 0C9-10 8-34 0-46C-8-34-9-10 0 0Z" fill="url(#petalCream)" stroke="#c49a3c" strokeWidth=".9" />)}
+    {[20, 80, 140, 200, 260, 320].map(a => <g key={a} transform={`rotate(${a})`}><path d="M0 0V-16" stroke="#b07f25" strokeWidth=".9" /><circle cy="-17" r="1.8" fill="#d9a53a" /></g>)}
+  </g>;
 }
-
-/* ---------- Ambient petals over the site ---------- */
-function Petals() {
-  return <div className="petals" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} className={'p' + (i % 3)} style={{ left: rnd(i, 9) * 100 + '%', animationDuration: 11 + rnd(i, 10) * 10 + 's', animationDelay: -rnd(i, 11) * 20 + 's', '--s': 0.6 + rnd(i, 12) * 0.9, '--sway': (rnd(i, 13) * 120 - 60) + 'px' }} />)}</div>;
+function LilyCorner({ className }) {
+  return <svg className={className} viewBox="0 0 170 170" fill="none" aria-hidden="true">
+    <path d="M4 6C50 20 66 60 70 100M6 4C40 34 90 40 140 30" stroke="url(#goldStroke)" strokeWidth="2.2" />
+    <path d="M10 60C24 52 30 40 28 26M60 12C52 26 40 32 26 30" stroke="url(#goldStroke)" strokeWidth="1.4" />
+    <Leaf x={40} y={52} r={130} s={.95} fill="#1d2f63" vein="#d4ad55" /><Leaf x={82} y={34} r={70} s={.85} fill="#1d2f63" vein="#d4ad55" />
+    <Leaf x={36} y={98} r={175} s={.8} fill="#1d2f63" vein="#d4ad55" /><Leaf x={112} y={52} r={50} s={.7} fill="#d4ad55" vein="#9a6f1f" />
+    <Leaf x={64} y={92} r={145} s={.62} fill="#d4ad55" vein="#9a6f1f" /><Leaf x={14} y={120} r={185} s={.5} fill="#d4ad55" vein="#9a6f1f" />
+    <Lily x={62} y={62} s={.95} r={15} /><Lily x={122} y={28} s={.6} r={40} /><Lily x={22} y={118} s={.55} r={-10} />
+  </svg>;
 }
-
-function Mandala({ className }) {
-  return <svg className={'mandala ' + className} viewBox="-100 -100 200 200" fill="none" aria-hidden="true">
-    {Array.from({ length: 16 }, (_, i) => <g key={i} transform={`rotate(${i * 22.5})`}>
-      <path d="M0 -92Q14 -70 0 -48Q-14 -70 0 -92Z" stroke="currentColor" strokeWidth=".7" />
-      <path d="M0 -44Q8 -32 0 -20Q-8 -32 0 -44Z" stroke="currentColor" strokeWidth=".6" />
-      <circle cy="-98" r="1.3" fill="currentColor" />
-    </g>)}
-    <circle r="96" stroke="currentColor" strokeWidth=".4" strokeDasharray="2 3" />
-    <circle r="46" stroke="currentColor" strokeWidth=".5" /><circle r="16" stroke="currentColor" strokeWidth=".5" />
+function Flourish({ className = '', width = 200 }) {
+  const half = <g>
+    <path d="M86 10C76 2 66 2 62 8C59 13 66 16 69 11" />
+    <path d="M86 10C76 18 66 18 62 12" />
+    <path d="M60 10H8" strokeWidth=".9" />
+    <circle cx="6" cy="10" r="1.6" fill="currentColor" />
+    <path d="M58 10C50 4 42 5 40 10C42 15 50 16 58 10Z" fill="currentColor" opacity=".25" />
+  </g>;
+  return <svg className={'flourish ' + className} viewBox="0 0 200 20" width={width} fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+    {half}<g transform="translate(200 0) scale(-1 1)">{half}</g>
+    <path d="M100 2L108 10L100 18L92 10Z" fill="currentColor" />
+    <circle cx="100" cy="10" r="2" fill="#fff6dc" stroke="none" />
+  </svg>;
+}
+function Fleur({ className = '' }) {
+  return <svg className={'fleur ' + className} viewBox="0 0 90 30" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+    <path d="M45 2C50 9 50 15 45 22C40 15 40 9 45 2Z" fill="currentColor" />
+    <path d="M42 22C30 26 18 22 16 14C15 8 23 7 24 13M48 22C60 26 72 22 74 14C75 8 67 7 66 13" />
+    <path d="M36 16C28 10 30 4 36 6M54 16C62 10 60 4 54 6" />
+    <circle cx="45" cy="27" r="2" fill="currentColor" /><circle cx="8" cy="18" r="1.5" fill="currentColor" /><circle cx="82" cy="18" r="1.5" fill="currentColor" />
+  </svg>;
+}
+function Lantern({ className }) {
+  return <svg className={'lantern ' + className} viewBox="0 0 40 150" fill="none" aria-hidden="true">
+    <path d="M20 0V40" stroke="#c49a3c" strokeWidth="1.2" strokeDasharray="3 2" />
+    <path d="M14 40H26L28 46H12Z" fill="#c49a3c" /><circle cx="20" cy="38" r="2.4" fill="#c49a3c" />
+    <path className="glass" d="M11 46H29L31 76Q20 86 9 76Z" fill="#ffd779" stroke="#b9892c" strokeWidth="1.5" />
+    <path d="M15 48V80M20 46V84M25 48V80" stroke="#a5752a" strokeWidth=".7" />
+    <path d="M12 84H28L20 98Z" fill="#c49a3c" /><path d="M20 98V112" stroke="#c49a3c" /><circle cx="20" cy="115" r="2.6" fill="#c49a3c" />
+    <path d="M17 118L20 130L23 118" fill="#c49a3c" />
+  </svg>;
+}
+function Defs() {
+  return <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+    <defs>
+      <linearGradient id="petalPink" x1="0" y1="0" x2="0" y2="-46" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#e9a2b7" /><stop offset=".55" stopColor="#f8dbe4" /><stop offset="1" stopColor="#fffafb" /></linearGradient>
+      <linearGradient id="petalCream" x1="0" y1="0" x2="0" y2="-46" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#f0d89a" /><stop offset=".5" stopColor="#fbf1dc" /><stop offset="1" stopColor="#fffdf7" /></linearGradient>
+      <linearGradient id="goldStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#9a6f1f" /><stop offset=".5" stopColor="#f3d27d" /><stop offset="1" stopColor="#b9892c" /></linearGradient>
+    </defs>
   </svg>;
 }
 
-/* ---------- Sections ---------- */
-function Welcome() {
-  return <div className="welcome">
-    <Mandala className="spin-slow" />
-    <p className="bismillah" lang="ar" dir="rtl" data-r style={{ '--d': '.1s' }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-    <p className="bismillah-en" data-r style={{ '--d': '.35s' }}>In the name of Allah, the Most Beneficent, the Most Merciful</p>
-    <h1 className="mega">
-      <Split text="TWO WEDDINGS." delay={0.5} className="line ivory" />
-      <Split text="ONE CELEBRATION." delay={0.95} className="line gold" />
-    </h1>
-    <p className="remembrance" data-r style={{ '--d': '1.7s' }}>
-      In loving remembrance of <strong>Mr. Mohd Irfan (Late)</strong>, we joyfully invite you to celebrate the marriages of his beloved sons. Your presence and duas will make our happiness complete.
-    </p>
-    <span className="scroll-cue" data-r style={{ '--d': '2.1s' }} aria-hidden="true"><i /></span>
+/* =========================================================
+   Opening: laser-cut jali pocket tied with a ribbon
+   ========================================================= */
+function Jali() {
+  const shape = 'M0-12Q6-12 6-6Q12-6 12 0Q12 6 6 6Q6 12 0 12Q-6 12-6 6Q-12 6-12 0Q-12-6-6-6Q-6-12 0-12Z';
+  const cells = [];
+  for (let row = 0; row < 4; row++) for (let col = -3; col <= 3; col++) {
+    const x = 150 + col * 28 + (row % 2 ? 14 : 0), y = 120 + row * 22;
+    if (Math.abs(x - 150) / 28 + row * .62 < 3.4 && x > 60 && x < 240) cells.push([x, y]);
+  }
+  return <g>{cells.map(([x, y], i) => <path key={i} d={shape} transform={`translate(${x} ${y})`} fill="#273230" />)}</g>;
+}
+function Pocket({ state, onOpen }) {
+  return <div className={'pocket-scene ' + state}>
+    <div className="table-glow" aria-hidden="true" />
+    <button className="pocket" onClick={onOpen} disabled={state !== 'closed'} aria-label="Untie the ribbon to open the wedding invitation">
+      <span className="pocket-body" aria-hidden="true">
+        <svg className="pocket-art" viewBox="0 0 300 220" fill="none">
+          <Jali />
+          <g transform="translate(150 50)">
+            <circle r="34" fill="none" stroke="#c9a24a" strokeWidth="1.2" strokeDasharray="2 3" />
+            {Array.from({ length: 16 }, (_, i) => <path key={i} transform={`rotate(${i * 22.5})`} d="M0-30Q5-36 0-42Q-5-36 0-30Z" fill="#d4ad55" />)}
+            <rect x="-22" y="-22" width="44" height="44" rx="11" transform="rotate(45)" fill="#e7f0e4" stroke="#d4ad55" strokeWidth="2.2" />
+            <text className="monogram" y="7" textAnchor="middle">S&amp;S</text>
+          </g>
+        </svg>
+        <MagnoliaCorner className="corner tl" />
+        <MagnoliaCorner className="corner tr" />
+      </span>
+      <span className="insert" aria-hidden="true">
+        <MagnoliaCorner className="mini bl" /><MagnoliaCorner className="mini br" />
+        <span className="insert-text">
+          <span className="insert-ar" lang="ar" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>
+          <span className="insert-title">You are cordially invited</span>
+          <span className="insert-sub">to a wedding celebration</span>
+        </span>
+        <span className="holes"><i /><i /></span>
+        <svg className="ribbon" viewBox="0 0 140 170" fill="none">
+          <path className="strand" d="M-60 36L104 70" stroke="#f5e08e" strokeWidth="7" />
+          <path className="strand" d="M-60 22L104 82" stroke="#ecd172" strokeWidth="7" />
+          <g className="bow" transform="translate(104 76)">
+            <path className="loop l" d="M0 0C-26-30-46-10-30 6C-20 16-8 6 0 0Z" fill="#f6e392" stroke="#d9bd57" strokeWidth="1.4" />
+            <path className="loop r" d="M0 0C24-32 46-14 32 4C22 16 8 6 0 0Z" fill="#f6e392" stroke="#d9bd57" strokeWidth="1.4" />
+            <path className="tail l" d="M-2 2C-10 30-22 56-30 84L-20 82C-12 56-4 30 2 4Z" fill="#f1da7c" />
+            <path className="tail r" d="M2 2C14 26 26 48 40 72L30 76C18 52 8 28-1 4Z" fill="#f1da7c" />
+            <ellipse className="knot" rx="7" ry="6" fill="#f3dc80" stroke="#d9bd57" strokeWidth="1.2" />
+          </g>
+        </svg>
+      </span>
+    </button>
+    <p className="pocket-hint"><span className="tap" aria-hidden="true" />Tap the ribbon to open</p>
+    <div className="ivory-flash" aria-hidden="true" />
   </div>;
 }
 
-const COUPLES = [
-  { no: '01', groom: 'Mohd Subhan', bride: 'Iqra Kousar', from: 'Moh. Muneer Ganj, Near Besatiyaam Masjid' },
-  { no: '02', groom: 'Mohd Sheeraz', bride: 'Afreen', from: 'Kaze Sarah, Nagina' },
-];
-function Couples() {
-  return <div className="couples">
-    <h2 className="title"><Split text="TWO HEARTS," /> <Split text="TWICE OVER." className="gold" delay={0.4} /></h2>
-    <p className="family-home" data-r style={{ '--d': '.8s' }}>The grooms’ family home · <strong>Moh. Sewaram Kuwa, Najibabad</strong></p>
-    <div className="couple-grid">
-      {COUPLES.map((c, i) => <article key={c.no} className={'couple-card ' + (i ? 'from-right' : 'from-left')} style={{ '--d': 0.9 + i * 0.25 + 's' }}>
-        <span className="couple-no" aria-hidden="true">{c.no}</span>
-        <span className="role">THE GROOM</span>
-        <h3 className="name">{c.groom}</h3>
-        <span className="heart" aria-label="weds">♥</span>
-        <span className="role">THE BRIDE</span>
-        <h3 className="name bride">{c.bride}</h3>
-        <p className="origin">{c.from}</p>
-      </article>)}
+/* =========================================================
+   The invitation card
+   ========================================================= */
+function Card() {
+  return <article className="card" aria-label="Wedding invitation">
+    <span className="foil-sweep" aria-hidden="true" />
+    <LilyCorner className="lily tl" /><LilyCorner className="lily tr" /><LilyCorner className="lily bl" /><LilyCorner className="lily br" />
+    <div className="sheet">
+      <section className="page p-intro" aria-label="Invitation"><div className="page-in">
+      <PageLilies a="tl" b="tr" />
+      <Lantern className="left" /><Lantern className="right" />
+      <Fleur className="finial" />
+      <p className="bismillah" lang="ar" dir="rtl" data-r style={{ '--d': '.15s' }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+      <p className="italic-line" data-r style={{ '--d': '.35s' }}>In the Name of Allah,<br />the Most Beneficent and the Most Merciful</p>
+      <span data-r="draw" style={{ '--d': '.55s' }}><Flourish /></span>
+      <h1 className="host" data-r style={{ '--d': '.7s' }}>Mr. Mohd Irfan</h1>
+      <p className="late" data-r style={{ '--d': '.8s' }}>(Late)</p>
+      <p className="italic-line invites" data-r style={{ '--d': '.95s' }}>Cordially invites you to the<br />Wedding Ceremony of their beloved sons</p>
+      <span data-r="draw" style={{ '--d': '1.1s' }}><Flourish /></span>
+      <p className="swipe-hint" aria-hidden="true"><span>⌃</span>Swipe up</p>
+      </div></section>
+
+      <section className="page p-couples" aria-label="The couples"><div className="page-in">
+      <PageLilies a="tr" b="bl" />
+      <div className="couples">
+        {COUPLES.map((c, i) => <section key={c.bride} className="frame" data-r="rise" style={{ '--d': i * .25 + 's' }} aria-label={`${c.groom.join(' ')} weds ${c.bride}`}>
+          <Fleur className="frame-top" />
+          <h2 className="script write" style={{ '--d': .45 + 's' }}>{c.groom[0]}<br />{c.groom[1]}</h2>
+          <p className="addr"><b>Address:</b><br />{GROOM_HOME}</p>
+          <p className="weds pop-in" style={{ '--d': '1s' }}><span>WEDS</span></p>
+          <h2 className="script bride write" style={{ '--d': '1.3s' }}>{c.bride}</h2>
+          <p className="addr"><b>Address:</b><br />{c.brideHome[0]}<br />{c.brideHome[1]}</p>
+          <Fleur className="frame-bottom" />
+        </section>)}
+        <span className="divider-v" aria-hidden="true" />
+      </div>
+      </div></section>
+
+      <section className="page p-venue" aria-label="Date and venue"><div className="page-in">
+      <PageLilies a="bl" b="br" />
+      <div className="programme" data-r style={{ '--d': '.1s' }}>
+        <span className="wing" aria-hidden="true" /><span className="programme-label">Programme</span><span className="wing r" aria-hidden="true" />
+      </div>
+      <div className="date-scratch" data-r="rise" style={{ '--d': '.25s' }}>
+        <ScratchCard>
+          <p className="sd-label">Save the Date</p>
+          <p className="sd-day">Tuesday</p>
+          <p className="sd-date"><strong>15<sup>th</sup></strong> December 2026</p>
+          <Flourish className="sd-flourish" />
+          <p className="sd-line">Mark your calendar — we await you</p>
+        </ScratchCard>
+      </div>
+      <div className="venue" data-r="rise" style={{ '--d': '.4s' }}>
+        <span className="pin" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22S5 14.5 5 9.5A7 7 0 0 1 19 9.5C19 14.5 12 22 12 22Z" /><circle cx="12" cy="9.5" r="2.6" /></svg></span>
+        <div className="venue-body">
+          <div className="venue-text">
+            <h2 className="venue-name">Chand Banquet Hall</h2>
+            <p className="venue-addr">Near Double Fatak,<br />Najibabad</p>
+            <a className="maps-btn" href={DIRECTIONS} target="_blank" rel="noreferrer">Open in Maps ↗</a>
+          </div>
+          <figure className="venue-qr">
+            <QrCode value={QR_DIRECTIONS} label="QR code that opens directions to Chand Banquet Hall in Google Maps" />
+            <figcaption>Scan for directions</figcaption>
+          </figure>
+        </div>
+      </div>
+      <span data-r="draw" style={{ '--d': '.2s' }}><Flourish className="end" /></span>
+      </div></section>
     </div>
-  </div>;
+  </article>;
+}
+function PageLilies({ a, b }) {
+  return <><LilyCorner className={'page-lily ' + a} /><LilyCorner className={'page-lily ' + b} /></>;
 }
 
+/* ---------- Extras below the card ---------- */
 function Countdown() {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
@@ -157,54 +247,7 @@ function downloadIcs() {
   const a = document.createElement('a'); a.href = url; a.download = 'wedding-15-december-2026.ics'; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-function TheDate({ active }) {
-  const [day, setDay] = useState(1);
-  useEffect(() => {
-    if (!active) return;
-    if (reducedMotion()) { setDay(15); return; }
-    let raf; const start = performance.now();
-    const tick = t => { const p = Math.min(1, (t - start) / 1400); setDay(Math.max(1, Math.round(15 * (1 - Math.pow(1 - p, 3))))); if (p < 1) raf = requestAnimationFrame(tick); };
-    raf = requestAnimationFrame(tick); return () => cancelAnimationFrame(raf);
-  }, [active]);
-  const gcal = 'https://calendar.google.com/calendar/render?' + new URLSearchParams({ action: 'TEMPLATE', text: 'Wedding: Subhan & Iqra and Sheeraz & Afreen', dates: '20261215/20261216', details: 'Join our family to celebrate. Ceremony timings to be confirmed.', location: 'Chand Banquet Hall, Near Double Fatak, Najibabad', ctz: 'Asia/Kolkata' });
-  return <div className="the-date">
-    <h2 className="sr-only">Tuesday, 15 December 2026</h2>
-    <p className="weekday outline" data-r aria-hidden="true">TUESDAY</p>
-    <div className="day-wrap" aria-hidden="true">
-      <span className="orbit o1" /><span className="orbit o2" /><span className="orbit-dot" />
-      <span className="day gold">{String(day).padStart(2, '0')}</span>
-    </div>
-    <p className="month" aria-hidden="true"><Split text="DECEMBER 2026" delay={0.3} step={0.06} /></p>
-    <Countdown />
-    <div className="actions" data-r style={{ '--d': '.9s' }}>
-      <a className="btn" href={gcal} target="_blank" rel="noreferrer">＋ Google Calendar</a>
-      <button className="btn ghost" onClick={downloadIcs}>＋ Apple / Outlook</button>
-    </div>
-    <p className="fine" data-r style={{ '--d': '1.1s' }}>All-day entry · ceremony timings to be shared by the family</p>
-  </div>;
-}
-
-function Palace() {
-  const lines = ['M10 205H390', 'M40 205V190H360V205', 'M90 190V110H310V190', 'M145 110H255', 'M150 110Q150 62 200 45Q250 62 250 110', 'M200 45V28', 'M178 190V150Q200 122 222 150V190', 'M110 175V140Q122 124 134 140V175', 'M266 175V140Q278 124 290 140V175', 'M95 110Q95 92 112 86Q129 92 129 110', 'M271 110Q271 92 288 86Q305 92 305 110', 'M50 190V72H64V190', 'M336 190V72H350V190', 'M46 72Q57 44 68 72', 'M332 72Q343 44 354 72', 'M57 46V34', 'M343 46V34', 'M46 112H68M46 150H68', 'M332 112H354M332 150H354', 'M150 140H166V170H150ZM234 140H250V170H234Z'];
-  return <svg className="palace" viewBox="0 0 400 215" fill="none" role="img" aria-label="Line drawing of a banquet palace">
-    <path className="palace-fill" d="M90 190V110H145Q150 62 200 45Q250 62 255 110H310V190Z" />
-    <path className="door-glow" d="M178 190V150Q200 122 222 150V190Z" />
-    {lines.map((d, i) => <path key={i} className="draw" d={d} pathLength="1" style={{ '--d': (i * 0.07).toFixed(2) + 's' }} />)}
-    <circle className="pop" cx="200" cy="24" r="3.5" /><circle className="pop" cx="57" cy="31" r="2.5" /><circle className="pop" cx="343" cy="31" r="2.5" />
-    <path className="pop moon" d="M330 18A14 14 0 1 0 344 38A11 11 0 1 1 330 18Z" />
-  </svg>;
-}
-function Venue() {
-  return <div className="venue">
-    <p className="eyebrow" data-r>THE VENUE</p>
-    <Palace />
-    <h2 className="venue-name"><Split text="CHAND" className="ivory" delay={1.2} /> <Split text="BANQUET HALL" className="gold" delay={1.4} /></h2>
-    <p className="address" data-r style={{ '--d': '1.9s' }}>Near Double Fatak · Najibabad, Uttar Pradesh</p>
-    <a className="btn big" data-r style={{ '--d': '2.1s' }} href={DIRECTIONS} target="_blank" rel="noreferrer">Get directions <span className="arrow">→</span></a>
-  </div>;
-}
-
-function Farewell({ onReplay }) {
+function Extras({ onReplay }) {
   const [copied, setCopied] = useState(false);
   async function share() {
     if (!/^https?:$/.test(location.protocol)) { alert('To share this invitation, open it from a hosted website link.'); return; }
@@ -212,69 +255,86 @@ function Farewell({ onReplay }) {
     try { await navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 2500); }
     catch { prompt('Copy the invitation link', location.href); }
   }
-  return <div className="farewell">
-    <Mandala className="spin-rev" />
-    <p className="eyebrow" data-r>THE BEST PART?</p>
-    <h2 className="mega"><Split text="HAVING YOU" className="line ivory" delay={0.2} /><Split text="THERE." className="line gold huge" delay={0.6} step={0.09} /></h2>
-    <p className="closing" data-r style={{ '--d': '1.2s' }}>Come with your love and duas — leave with memories to cherish forever.</p>
-    <p className="signature" data-r style={{ '--d': '1.45s' }}>With love, our family</p>
-    <div className="actions" data-r style={{ '--d': '1.7s' }}>
-      <button className="btn" onClick={share}>{copied ? 'Link copied ✓' : 'Share invitation ↗'}</button>
-      <button className="btn ghost" onClick={onReplay}>Close the doors ⟲</button>
-    </div>
-    <span className="sr-only" role="status">{copied ? 'Invitation link copied' : ''}</span>
+  const gcal = 'https://calendar.google.com/calendar/render?' + new URLSearchParams({ action: 'TEMPLATE', text: 'Wedding: Subhan & Iqra and Sheeraz & Afreen', dates: '20261215/20261216', details: 'Join our family to celebrate. Ceremony timings to be confirmed.', location: 'Chand Banquet Hall, Near Double Fatak, Najibabad', ctz: 'Asia/Kolkata' });
+  return <div className="extras">
+    <section className="page" aria-label="Countdown"><div className="page-in panel" data-r>
+      <PageLilies a="tl" b="br" />
+      <Flourish className="light" />
+      <p className="panel-title">Counting the days</p>
+      <Countdown />
+      <div className="actions">
+        <a className="btn" href={gcal} target="_blank" rel="noreferrer">＋ Google Calendar</a>
+        <button className="btn ghost" onClick={downloadIcs}>＋ Apple / Outlook</button>
+        <a className="btn ghost" href={DIRECTIONS} target="_blank" rel="noreferrer">⌖ Directions</a>
+      </div>
+      <p className="fine">All-day entry · ceremony timings to be shared by the family</p>
+    </div></section>
+    <section className="page" aria-label="A blessing"><div className="page-in panel" data-r><PageLilies a="tr" b="bl" /><BlessingCarousel active /></div></section>
+    <section className="page" aria-label="With love"><div className="page-in panel closing" data-r>
+      <PageLilies a="bl" b="br" />
+      <p className="closing-script">With love &amp; duas</p>
+      <p className="closing-copy">Your presence will make our happiness complete.</p>
+      <div className="actions">
+        <button className="btn" onClick={share}>{copied ? 'Link copied ✓' : 'Share invitation ↗'}</button>
+        <button className="btn ghost" onClick={onReplay}>Tie the ribbon again ⟲</button>
+      </div>
+      <span className="sr-only" role="status">{copied ? 'Invitation link copied' : ''}</span>
+    </div></section>
   </div>;
 }
 
-/* ---------- App ---------- */
-function App() {
-  const [gate, setGate] = useState('closed'); // closed → opening → gone
-  const [seen, setSeen] = useState(() => new Set());
-  const [active, setActive] = useState('welcome');
-  const scroller = useRef(); const root = useRef(); const timer = useRef();
-  useEffect(() => () => clearTimeout(timer.current), []);
+function Sparkles() {
+  return <div className="sparkles" aria-hidden="true">{Array.from({ length: 22 }, (_, i) => <i key={i} className={'k' + (i % 3)} style={{ left: rnd(i, 1) * 100 + '%', animationDuration: 12 + rnd(i, 2) * 12 + 's', animationDelay: -rnd(i, 3) * 24 + 's', '--s': .5 + rnd(i, 4) * .9, '--sway': (rnd(i, 5) * 100 - 50) + 'px' }} />)}</div>;
+}
 
-  function openGate() {
-    if (gate !== 'closed') return;
-    setGate('opening');
-    timer.current = setTimeout(() => { setGate('gone'); scroller.current?.focus({ preventScroll: true }); }, reducedMotion() ? 60 : 3100);
+/* =========================================================
+   App
+   ========================================================= */
+function App() {
+  const [stage, setStage] = useState('closed'); // closed → opening → card
+  const [page, setPage] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
+  const [hasMusic, setHasMusic] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const scroller = useRef(); const timer = useRef(); const audio = useRef();
+  useEffect(() => () => clearTimeout(timer.current), []);
+  function toggleMusic() {
+    const a = audio.current; if (!a) return;
+    if (a.paused) a.play().catch(() => setPlaying(false)); else a.pause();
   }
-  function replay() {
-    clearTimeout(timer.current);
-    scroller.current?.scrollTo({ top: 0 });
-    setSeen(new Set()); setActive('welcome'); setGate('closed');
+
+  function open() {
+    if (stage !== 'closed') return;
+    setStage('opening');
+    audio.current?.play().catch(() => {});
+    timer.current = setTimeout(() => { setStage('card'); scroller.current?.focus({ preventScroll: true }); }, reducedMotion() ? 60 : 2900);
   }
+  function replay() { clearTimeout(timer.current); scroller.current?.scrollTo({ top: 0 }); setStage('closed'); }
 
   useEffect(() => {
-    if (gate !== 'gone') return;
-    const el = scroller.current; const sections = [...el.querySelectorAll('section')];
-    const reveal = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setSeen(s => s.has(e.target.id) ? s : new Set(s).add(e.target.id)); }), { root: el, threshold: 0.22 });
-    const spy = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }), { root: el, rootMargin: '-48% 0px -48% 0px' });
-    sections.forEach(s => { reveal.observe(s); spy.observe(s); });
-    const onScroll = () => root.current.style.setProperty('--progress', (el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)).toFixed(4));
-    el.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-    return () => { reveal.disconnect(); spy.disconnect(); el.removeEventListener('scroll', onScroll); };
-  }, [gate]);
+    if (stage !== 'card') return;
+    const root = scroller.current;
+    root.querySelectorAll('[data-r]').forEach(el => el.classList.remove('in'));
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { root, threshold: .15 });
+    root.querySelectorAll('[data-r]').forEach(el => io.observe(el));
+    const pages = [...root.querySelectorAll('.page')]; setPageCount(pages.length);
+    const spy = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setPage(pages.indexOf(e.target)); }), { root, rootMargin: '-49% 0px -49% 0px' });
+    pages.forEach(p => spy.observe(p));
+    return () => { io.disconnect(); spy.disconnect(); };
+  }, [stage]);
 
-  const go = id => document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' });
-  const cls = id => 'panel ' + id + (seen.has(id) ? ' is-in' : '');
-
-  return <div ref={root} className={'app gate-' + gate}>
-    <div className="bg" aria-hidden="true" />
-    {gate !== 'closed' && <Petals />}
-    <div className="progress" aria-hidden="true" />
-    <nav className="dots" aria-label="Invitation sections" inert={gate !== 'gone'}>
-      {SECTIONS.map(s => <button key={s.id} className={active === s.id ? 'on' : ''} onClick={() => go(s.id)} aria-label={s.label} aria-current={active === s.id ? 'true' : undefined}><span>{s.label}</span></button>)}
-    </nav>
-    <main ref={scroller} className="scroller" tabIndex={-1} inert={gate !== 'gone'}>
-      <section id="welcome" className={cls('welcome')}><Welcome /></section>
-      <section id="couples" className={cls('couples')}><Couples /></section>
-      <section id="date" className={cls('date')}><TheDate active={seen.has('date')} /></section>
-      <section id="venue" className={cls('venue')}><Venue /></section>
-      <section id="blessing" className={cls('blessing')}><BlessingCarousel active={seen.has('blessing')} /></section>
-      <section id="farewell" className={cls('farewell')}><Farewell onReplay={replay} /></section>
+  return <div className={'app stage-' + stage}>
+    <Defs />
+    <div className="backdrop" aria-hidden="true" />
+    {stage !== 'closed' && <Sparkles />}
+    <main ref={scroller} className="scroller" tabIndex={-1} inert={stage !== 'card'}>
+      <Card />
+      <Extras onReplay={replay} />
     </main>
-    {gate !== 'gone' && <Gate state={gate} onOpen={openGate} />}
+    <nav className="page-dots" aria-label="Sections" inert={stage !== 'card'}>{Array.from({ length: pageCount }, (_, i) => <button key={i} className={i === page ? 'on' : ''} aria-label={'Go to section ' + (i + 1)} aria-current={i === page ? 'true' : undefined} onClick={() => scroller.current.querySelectorAll('.page')[i]?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' })} />)}</nav>
+    <audio ref={audio} src={MUSIC_SRC} loop preload="auto" onLoadedMetadata={() => setHasMusic(true)} onError={() => setHasMusic(false)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+    {hasMusic && stage === 'card' && <button className={'music' + (playing ? ' on' : '')} onClick={toggleMusic} aria-label={playing ? 'Pause music' : 'Play music'} aria-pressed={playing}><span className="bars" aria-hidden="true"><i /><i /><i /><i /></span><span className="note" aria-hidden="true">♪</span></button>}
+    {stage !== 'card' && <Pocket state={stage} onOpen={open} />}
   </div>;
 }
 
