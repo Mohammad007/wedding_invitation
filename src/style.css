@@ -159,22 +159,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .invites { margin-top: .6cqi; }
 
 .couples { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 7cqi; margin: 5cqi 0 6cqi; }
-.frame { position: relative; padding: 10cqi 2cqi 9cqi; background: radial-gradient(100% 70% at 50% 20%, #fffef9, var(--paper)); border-radius: 50% 50% 4cqi 4cqi / 15cqi 15cqi 4cqi 4cqi;
+.frame { position: relative; padding: 9cqi 2cqi 7cqi; background: radial-gradient(100% 70% at 50% 20%, #fffef9, var(--paper)); border-radius: 50% 50% 4cqi 4cqi / 15cqi 15cqi 4cqi 4cqi;
   box-shadow: 0 0 0 .5cqi var(--gold), 0 0 0 1.3cqi var(--paper), 0 0 0 1.65cqi var(--gold-lo), 0 2cqi 5cqi rgba(23, 40, 90, .14); }
-.frame-top, .frame-bottom { position: absolute; left: 50%; width: 19cqi; translate: -50% 0; }
-.frame-top { top: 1.6cqi; } .frame-bottom { bottom: 1.6cqi; rotate: 180deg; }
 .script { font: 400 8.4cqi/.98 var(--script); color: var(--navy-ink); -webkit-text-stroke: .022em currentColor; }
 .script.bride { font-size: 7.4cqi; margin-top: .5cqi; }
-.addr { margin: 1.4cqi 0 0; font: 600 max(11px, 3.1cqi)/1.22 var(--serif); }
-.addr b { font-weight: 700; }
 .weds { display: flex; align-items: center; justify-content: center; gap: 1.2cqi; margin: 3cqi -3.4cqi 2.6cqi; }
 .weds::before, .weds::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); border-radius: 2px; }
 .weds::after { background: linear-gradient(-90deg, transparent, var(--gold)); }
 .weds span { padding: 1cqi 3.4cqi; font: 700 3.1cqi var(--cinzel); letter-spacing: .1em; color: #fff6dc;
   background: linear-gradient(#c4953a, #8f6420); clip-path: polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%); }
-.divider-v { position: absolute; left: 50%; top: 12%; bottom: 12%; width: 2px; translate: -50% 0; background: linear-gradient(transparent, var(--gold) 15%, var(--gold) 85%, transparent); }
-.divider-v::before, .divider-v::after { content: ''; position: absolute; left: 50%; width: 2.4cqi; height: 2.4cqi; translate: -50% -50%; rotate: 45deg; background: var(--gold); }
-.divider-v::before { top: 30%; } .divider-v::after { top: 70%; }
 
 .programme { display: flex; align-items: center; justify-content: center; gap: 2cqi; }
 .programme .wing { flex: 0 1 16cqi; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); position: relative; }
@@ -354,11 +347,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   @keyframes hint { 50% { transform: translateY(-8px); } }
 
   .couples { width: 100%; gap: 5cqi; margin: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .frame { padding: 13cqi 1.5cqi 12cqi; }
-  .frame-top, .frame-bottom { width: 21cqi; }
+  .frame { padding: 12cqi 1.5cqi 10cqi; }
   .script { font-size: 10.6cqi; }
   .script.bride { font-size: 9cqi; }
-  .addr { font-size: 3.9cqi; margin-top: 2cqi; }
   .weds { margin: 4cqi -2cqi 3.4cqi; }
   .weds span { font-size: 3.6cqi; }
 

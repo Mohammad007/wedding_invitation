@@ -10,10 +10,9 @@ const DIRECTIONS = 'https://www.google.com/maps/search/?api=1&query=Chand+Banque
 // Shorter link for the QR code, so its dots are larger and easier for phone cameras to read
 const QR_DIRECTIONS = 'https://maps.google.com/?q=Chand+Banquet+Hall+Near+Double+Fatak+Najibabad';
 const MUSIC_SRC = 'https://pub-717179bab2d447a1a4a8b832b13d0e04.r2.dev/template-assets/emerald-qasr/music.mp3';
-const GROOM_HOME = 'Moh. Sewaram Kuwa, Najibabad';
 const COUPLES = [
-  { groom: ['Mohd', 'Subhan'], bride: 'Iqra Kousar', brideHome: ['Moh. Muneer Ganj,', 'Near Besatiyaam Masjid'] },
-  { groom: ['Mohd', 'Sheeraz'], bride: 'Afreen', brideHome: ['Kaze Sarah,', 'Nagina'] },
+  { groom: ['Mohd', 'Subhan'], bride: 'Iqra Kousar' },
+  { groom: ['Mohd', 'Sheeraz'], bride: 'Afreen' },
 ];
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rnd = (i, s) => { const x = Math.sin(i * 12.9898 + s * 78.233) * 43758.5453; return x - Math.floor(x); };
@@ -180,15 +179,10 @@ function Card() {
       <PageLilies a="tr" b="bl" />
       <div className="couples">
         {COUPLES.map((c, i) => <section key={c.bride} className="frame" data-r="rise" style={{ '--d': i * .25 + 's' }} aria-label={`${c.groom.join(' ')} weds ${c.bride}`}>
-          <Fleur className="frame-top" />
           <h2 className="script write" style={{ '--d': .45 + 's' }}>{c.groom[0]}<br />{c.groom[1]}</h2>
-          <p className="addr"><b>Address:</b><br />{GROOM_HOME}</p>
           <p className="weds pop-in" style={{ '--d': '1s' }}><span>WEDS</span></p>
           <h2 className="script bride write" style={{ '--d': '1.3s' }}>{c.bride}</h2>
-          <p className="addr"><b>Address:</b><br />{c.brideHome[0]}<br />{c.brideHome[1]}</p>
-          <Fleur className="frame-bottom" />
         </section>)}
-        <span className="divider-v" aria-hidden="true" />
       </div>
       </div></section>
 
